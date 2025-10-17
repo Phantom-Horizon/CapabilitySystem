@@ -1,0 +1,33 @@
+﻿{
+	"FileVersion": 3,
+	"Version": 1,
+	"VersionName": "1.0",
+	"FriendlyName": "CapabilitySystem",
+	"Description": "",
+	"Category": "Other",
+	"CreatedBy": "",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"CanContainContent": true,
+	"IsBetaVersion": false,
+	"IsExperimentalVersion": false,
+	"Installed": false,
+    "Plugins": [
+        {
+            "Name": "Angelscript",
+            "Enabled": true
+        },
+        {
+            "Name": "EnhancedInput",
+            "Enabled": true
+        }
+    ],
+    "Modules": [
+		{
+			"Name": "CapabilitySystem",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		}
+	]
+}
