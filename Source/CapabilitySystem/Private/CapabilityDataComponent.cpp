@@ -1,5 +1,5 @@
-﻿#include "CapabilityDataComponent.h"
-#include "CapabilityMetaHead.h"
+﻿#include "CapabilitySystem/Public/CapabilityDataComponent.h"
+#include "CapabilitySystem/Public/CapabilityMetaHead.h"
 #include "Net/UnrealNetwork.h"
 
 void UCapabilityDataComponent::GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const {

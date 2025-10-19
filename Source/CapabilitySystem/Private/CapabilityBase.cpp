@@ -1,7 +1,6 @@
-﻿#include "CapabilityBase.h"
-
-#include "CapabilityComponent.h"
-#include "CapabilityMetaHead.h"
+﻿#include "CapabilitySystem/Public/CapabilityBase.h"
+#include "CapabilitySystem/Public/CapabilityComponent.h"
+#include "CapabilitySystem/Public/CapabilityMetaHead.h"
 #include "Net/UnrealNetwork.h"
 
 UCapabilityBase::UCapabilityBase(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer) {}

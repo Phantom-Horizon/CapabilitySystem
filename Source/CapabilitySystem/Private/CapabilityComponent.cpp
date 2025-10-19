@@ -1,7 +1,6 @@
-﻿#include "CapabilityComponent.h"
-
-#include "CapabilityInput.h"
-#include "CapabilityMetaHead.h"
+﻿#include "CapabilitySystem/Public/CapabilityComponent.h"
+#include "CapabilitySystem/Public/CapabilityInput.h"
+#include "CapabilitySystem/Public/CapabilityMetaHead.h"
 #include "Net/UnrealNetwork.h"
 #include "Net/Core/PushModel/PushModel.h"
 #include "GameFramework/PlayerController.h"

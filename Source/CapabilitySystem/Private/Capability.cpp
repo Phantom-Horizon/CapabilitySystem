@@ -1,4 +1,4 @@
-﻿#include "Capability.h"
+﻿#include "CapabilitySystem/Public/Capability.h"
 
 UCapability::UCapability(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer) {
 }

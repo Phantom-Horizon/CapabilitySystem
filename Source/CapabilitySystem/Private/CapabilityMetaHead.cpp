@@ -1,7 +1,6 @@
-﻿#include "CapabilityMetaHead.h"
-
-#include "CapabilityBase.h"
-#include "CapabilityComponent.h"
+﻿#include "CapabilitySystem/Public/CapabilityMetaHead.h"
+#include "CapabilitySystem/Public/CapabilityBase.h"
+#include "CapabilitySystem/Public/CapabilityComponent.h"
 #include "Net/UnrealNetwork.h"
 
 void UCapabilityMetaHead::CallEndPlay() {

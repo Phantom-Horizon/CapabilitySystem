@@ -1,14 +1,13 @@
-﻿// Copyright Epic Games, Inc. All Rights Reserved.
+﻿// Copyright ySion. All Rights Reserved.
 
 #pragma once
-
+#include "CapabilitySystem/Public/Capability.h"
+#include "CapabilitySystem/Public/CapabilityInput.h"
+#include "CapabilitySystem/Public/CapabilityComponent.h"
 #include "Modules/ModuleManager.h"
 
-class FCapabilitySystemModule : public IModuleInterface
-{
+class FCapabilitySystemModule : public IModuleInterface {
 public:
-
-	/** IModuleInterface implementation */
-	virtual void StartupModule() override;
-	virtual void ShutdownModule() override;
+    virtual void StartupModule() override;
+    virtual void ShutdownModule() override;
 };

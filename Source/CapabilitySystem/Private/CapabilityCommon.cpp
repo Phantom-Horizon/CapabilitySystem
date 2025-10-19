@@ -1,5 +1,5 @@
-﻿#include "CapabilityCommon.h"
-#include "CapabilityMetaHead.h"
+﻿#include "CapabilitySystem/Public/CapabilityCommon.h"
+#include "CapabilitySystem/Public/CapabilityMetaHead.h"
 
 DEFINE_LOG_CATEGORY(CapabilitySystemLog);
 

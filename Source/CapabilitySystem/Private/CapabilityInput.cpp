@@ -1,4 +1,4 @@
-﻿#include "CapabilityInput.h"
+﻿#include "CapabilitySystem/Public/CapabilityInput.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 

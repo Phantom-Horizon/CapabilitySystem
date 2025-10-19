@@ -1,8 +1,7 @@
-﻿#include "InputAssetManager.h"
-
+﻿#include "CapabilitySystem/Public/CapabilityCommon.h"
+#include "CapabilitySystem/Public/InputAssetManager.h"
 #include "AngelscriptBinds.h"
 #include "AngelscriptDocs.h"
-#include "CapabilityCommon.h"
 #include "EnhancedInput/Public/InputMappingContext.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 

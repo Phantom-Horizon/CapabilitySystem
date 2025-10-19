@@ -3,7 +3,6 @@
 #include "CoreMinimal.h"
 #include "InputAction.h"
 #include "EnhancedInputSubsystems.h"
-#include "EnhancedInputComponent.h"
 
 #include "InputAssetManager.generated.h"
 

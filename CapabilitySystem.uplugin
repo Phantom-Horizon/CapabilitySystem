@@ -5,7 +5,7 @@
 	"FriendlyName": "CapabilitySystem",
 	"Description": "",
 	"Category": "Other",
-	"CreatedBy": "",
+	"CreatedBy": "ySion(LZY)",
 	"CreatedByURL": "",
 	"DocsURL": "",
 	"MarketplaceURL": "",
@@ -13,20 +13,25 @@
 	"IsBetaVersion": false,
 	"IsExperimentalVersion": false,
 	"Installed": false,
-    "Plugins": [
-        {
-            "Name": "Angelscript",
-            "Enabled": true
-        },
-        {
-            "Name": "EnhancedInput",
-            "Enabled": true
-        }
-    ],
-    "Modules": [
+	"Plugins": [
+		{
+			"Name": "Angelscript",
+			"Enabled": true
+		},
+		{
+			"Name": "EnhancedInput",
+			"Enabled": true
+		}
+	],
+	"Modules": [
 		{
 			"Name": "CapabilitySystem",
 			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "CapabilitySystemEditor",
+			"Type": "Editor",
 			"LoadingPhase": "Default"
 		}
 	]
