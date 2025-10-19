@@ -137,7 +137,8 @@ void UCapabilityBase::EndLife_Implementation() {}
 
 void UCapabilityBase::NativeBeginPlay() {
     if (bHasBegunPlay) return;
-
+    INC_DWORD_STAT(STAT_CapabilityCount);
+    
     const auto Comp = GetCapabilityComponent();
     if (!Comp || !Comp->HasBegunPlay()) return;
 
@@ -147,6 +148,7 @@ void UCapabilityBase::NativeBeginPlay() {
 
 void UCapabilityBase::NativePreEndPlay() {
     if (bHasPreEndedPlay) return;
+    
     bHasPreEndedPlay = true;
     if (bIsCapabilityActive) {
         bIsCapabilityActive = false;
@@ -163,6 +165,7 @@ void UCapabilityBase::NativeEndPlay() {
     }
     EndLife();
     EndPlay();
+    DEC_DWORD_STAT(STAT_CapabilityCount);
 }
 
 void UCapabilityBase::NativeTick(float DeltaTime) {

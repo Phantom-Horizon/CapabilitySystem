@@ -1,4 +1,5 @@
 ﻿#include "CapabilitySystem/Public/CapabilityComponent.h"
+#include "CapabilitySystem/Public/CapabilityAsset.h"
 #include "CapabilitySystem/Public/CapabilityInput.h"
 #include "CapabilitySystem/Public/CapabilityMetaHead.h"
 #include "Net/UnrealNetwork.h"
@@ -128,8 +129,8 @@ void UCapabilityComponent::EndPlay(const EEndPlayReason::Type EndPlayReason) {
 
 void UCapabilityComponent::TickComponent(float DeltaTime, ELevelTick TickType,
                                          FActorComponentTickFunction* ThisTickFunction) {
+    SCOPE_CYCLE_COUNTER(STAT_Capability_Tick)
     Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
-    SCOPE_CYCLE_COUNTER(STAT_Tick);
 
     if (bNeedSyncClientCaps) SyncCapabilityClient();
     if (bShouldTickUpdateThisFrame) UpdateTickStatus();
@@ -190,6 +191,7 @@ void UCapabilityComponent::OnControllerRemoved() {
 }
 
 void UCapabilityComponent::UpdateTickStatus() {
+    DEC_DWORD_STAT_BY(STAT_TickingCapabilityCount, TickList.Num());
     TickList.Reset();
     bShouldTickUpdateThisFrame = false;
 
@@ -202,7 +204,7 @@ void UCapabilityComponent::UpdateTickStatus() {
             }
         }
     }
-
+    INC_DWORD_STAT_BY(STAT_TickingCapabilityCount, TickList.Num());
     SetComponentTickEnabled(!TickList.IsEmpty() || bNeedSyncClientCaps);
 }
 

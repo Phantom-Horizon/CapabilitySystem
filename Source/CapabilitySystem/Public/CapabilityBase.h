@@ -2,11 +2,14 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
+#include "CapabilityCommon.h"
 #include "CapabilityDataComponent.h"
 #include "CapabilityBase.generated.h"
 
 class UCapabilityMetaHead;
 class UCapabilityComponent;
+
+DECLARE_DWORD_COUNTER_STAT(TEXT("Capability Count"), STAT_CapabilityCount, STATGROUP_Capability);
 
 UENUM(BlueprintType)
 enum class ECapabilityExecuteSide : uint8 {

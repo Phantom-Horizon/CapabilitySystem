@@ -1,10 +1,13 @@
 ﻿#pragma once
 
 #include "CoreMinimal.h"
+#include "CapabilityAsset.h"
 #include "CapabilityCommon.h"
 #include "Components/ActorComponent.h"
-
 #include "CapabilityComponent.generated.h"
+
+DECLARE_CYCLE_STAT(TEXT("Capability Tick"), STAT_Capability_Tick, STATGROUP_Capability)
+DECLARE_DWORD_COUNTER_STAT(TEXT("Ticking Capability Count"), STAT_TickingCapabilityCount, STATGROUP_Capability)
 
 UENUM(BlueprintType)
 enum class ECapabilityComponentMode : uint8 {
