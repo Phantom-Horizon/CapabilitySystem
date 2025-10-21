@@ -278,8 +278,9 @@ void UCapabilityComponent::UnBlockCapability(const FName& Tag, UObject* From) {
             }
         }
 
-        if (Changed > 0)
+        if (Changed > 0) {
             MARK_PROPERTY_DIRTY_FROM_NAME(ThisClass, BlockInfo, this);
+        }
     } else {
         ServerUnBlockCapability(Tag, From);
         for (int i = BlockInfo.Num() - 1; i >= 0; --i) {

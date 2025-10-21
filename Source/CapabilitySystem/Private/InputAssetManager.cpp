@@ -1,13 +1,8 @@
-﻿#include "CapabilitySystem/Public/CapabilityCommon.h"
-#include "CapabilitySystem/Public/InputAssetManager.h"
+﻿#include "CapabilitySystem/Public/InputAssetManager.h"
+#include "CapabilitySystem/Public/CapabilityCommon.h"
 #include "AngelscriptBinds.h"
 #include "AngelscriptDocs.h"
 #include "EnhancedInput/Public/InputMappingContext.h"
-#include "AssetRegistry/AssetRegistryModule.h"
-
-UInputAssetManagerSetting::UInputAssetManagerSetting() {
-    ScanPath = TArray<FString>();
-}
 
 void UInputAssetManager::Initialize(FSubsystemCollectionBase& Collection) {
     Super::Initialize(Collection);
@@ -26,60 +21,20 @@ void UInputAssetManager::ScanAndLoadInputAssets() {
     const UInputAssetManagerSetting* Settings = GetDefault<UInputAssetManagerSetting>();
     if (!Settings) return;
     
-    // 加载资产注册表模块
-    FAssetRegistryModule& AssetRegistryModule = FModuleManager::LoadModuleChecked<
-        FAssetRegistryModule>("AssetRegistry");
-    TArray<FAssetData> AssetData;
-    // --- 1. 查找并加载所有的 UInputAction ---
-    // 设置过滤器，只查找 UInputAction 类的资源
-    FARFilter ActionFilter;
-    ActionFilter.ClassPaths.Add(UInputAction::StaticClass()->GetClassPathName());
-    ActionFilter.bRecursiveClasses = true;
-    
-    UE_LOG(CapabilitySystemLog, Log, TEXT("UInputAssetManager: Prepare To Scan Path: "));
-    for (const FString& Path : Settings->ScanPath) {
-        ActionFilter.PackagePaths.Add(*Path);
-        UE_LOG(CapabilitySystemLog, Log, TEXT("\t\t %s"), *Path);
-    }
-    
-    UE_LOG(CapabilitySystemLog, Log, TEXT("UInputAssetManager: Scan Action: "));
-    int Count = 0;
-    ActionFilter.bRecursivePaths = true;
-    AssetRegistryModule.Get().GetAssets(ActionFilter, AssetData);
-    for (const FAssetData& Data : AssetData) {
-        if (UInputAction* LoadedAction = Cast<UInputAction>(Data.GetAsset())) {
-            // 使用资源本身的名称作为Key
-            InputActionMap.Add(LoadedAction->GetFName(), LoadedAction);
-            Count++;
-            UE_LOG(CapabilitySystemLog, Log, TEXT("UInputAssetManager: Loaded Input Action: %s"), *LoadedAction->GetName());
+    for (auto IA : Settings->InputActions) {
+        if (auto P = IA.LoadSynchronous()) {
+            InputActionMap.Add(P->GetFName(), P);
         }
     }
-    UE_LOG(CapabilitySystemLog, Log, TEXT("UInputAssetManager: Scan Action Complete, Count %d."), Count);
+    UE_LOG(CapabilitySystemLog, Log, TEXT("UInputAssetManager: Load Action Complete, Count %d."), InputActionMap.Num());
     
-    // --- 2. 查找并加载所有的 UInputMappingContext ---
-    AssetData.Empty(); // 清空数组以便复用
-    FARFilter IMCFilter;
-    IMCFilter.ClassPaths.Add(UInputMappingContext::StaticClass()->GetClassPathName());
-    IMCFilter.bRecursiveClasses = true;
-    
-    for (const FString& Path : Settings->ScanPath) {
-        ActionFilter.PackagePaths.Add(*Path);
-    }
-    
-    UE_LOG(CapabilitySystemLog, Log, TEXT("UInputAssetManager: Scan IMC: "));
-    Count = 0;
-    
-    IMCFilter.bRecursivePaths = true;
-    AssetRegistryModule.Get().GetAssets(IMCFilter, AssetData);
-    for (const FAssetData& Data : AssetData) {
-        if (UInputMappingContext* LoadedIMC = Cast<UInputMappingContext>(Data.GetAsset())) {
-            InputMappingContextMap.Add(LoadedIMC->GetFName(), LoadedIMC);
-            Count++;
-            UE_LOG(CapabilitySystemLog, Log, TEXT("UInputAssetManager: Loaded Input Mapping Context: %s"), *LoadedIMC->GetName());
+    for (auto IMC : Settings->InputMappingContexts) {
+        if (auto P = IMC.LoadSynchronous()) {
+            InputMappingContextMap.Add(P->GetFName(), P);
         }
     }
-    UE_LOG(CapabilitySystemLog, Log, TEXT("UInputAssetManager: Scan IMC Complete, Count %d."), Count);
     
+    UE_LOG(CapabilitySystemLog, Log, TEXT("UInputAssetManager: Load IMC Complete, Count %d."), InputMappingContextMap.Num());
 }
 
 UInputAction* UInputAssetManager::FindAction(const FName& ActionName) const {

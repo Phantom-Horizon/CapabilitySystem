@@ -12,10 +12,13 @@ class CAPABILITYSYSTEM_API UInputAssetManagerSetting : public UDeveloperSettings
     GENERATED_BODY()
 public:
 
-    UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Scan Path")
-    TArray<FString> ScanPath;
+    UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Config")
+    TArray<TSoftObjectPtr<UInputAction>> InputActions {};
+
+    UPROPERTY(Config, EditAnywhere, BlueprintReadOnly, Category = "Config")
+    TArray<TSoftObjectPtr<UInputMappingContext>> InputMappingContexts {};
     
-    UInputAssetManagerSetting();
+    UInputAssetManagerSetting() = default;
 };
 
 UCLASS()

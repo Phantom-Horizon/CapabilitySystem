@@ -35,7 +35,7 @@ public:
 
 UCLASS()
 class CAPABILITYSYSTEMEDITOR_API UCapabilitySetFactory : public UFactory {
-    GENERATED_BODY()
+    GENERATED_BODY() 
 
 public:
     UCapabilitySetFactory() {

@@ -19,6 +19,9 @@ public class CapabilitySystem : ModuleRules {
         PublicDependencyModuleNames.AddRange(
             new string[] {
                 "Core",
+                "EnhancedInput",
+                "AngelscriptCode",
+                "DeveloperSettings"
             }
         );
 
@@ -27,10 +30,7 @@ public class CapabilitySystem : ModuleRules {
                 "CoreUObject",
                 "Engine",
                 "Slate",
-                "SlateCore", 
-                "EnhancedInput",
-                "DeveloperSettings",
-                "AngelscriptCode",
+                "SlateCore",
                 "NetCore"
             }
         );
