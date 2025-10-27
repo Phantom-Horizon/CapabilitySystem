@@ -1,5 +1,7 @@
 ﻿#include "CapabilitySystem/Public/CapabilityAsset.h"
 
+#include "CapabilityMetaHead.h"
+
 void FCapabilityObjectRefSet::CallBeginPlay() {
     for (auto Ref : ObjectRefs)
         if (Ref) Ref->NativeBeginPlay();

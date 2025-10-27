@@ -39,14 +39,6 @@ public:
     FString ToStringAllAction() const;
 
     FString ToStringAllIMC() const;
-    
-    static UInputAction* Action(const FName& ActionName);
-    
-    static UInputMappingContext* IMC(const FName& IMCName);
-
-    static FString GetStringAllAction();
-    
-    static FString GetStringAllIMC();
 
 private:
     
@@ -57,4 +49,23 @@ private:
     TMap<FName, TObjectPtr<UInputMappingContext>> InputMappingContextMap;
     
     void ScanAndLoadInputAssets();
+};
+
+UCLASS()
+class UInputAssetManagerBind : public UBlueprintFunctionLibrary
+{
+    GENERATED_BODY()
+public:
+
+    UFUNCTION(BlueprintCallable, Category = "InputAssetManager")
+    static UInputAction* Action(const FName& ActionName);
+
+    UFUNCTION(BlueprintCallable, Category = "InputAssetManager")
+    static UInputMappingContext* IMC(const FName& IMCName);
+
+    UFUNCTION(BlueprintCallable, Category = "InputAssetManager")
+    static FString GetStringAllAction();
+
+    UFUNCTION(BlueprintCallable, Category = "InputAssetManager")
+    static FString GetStringAllIMC();
 };

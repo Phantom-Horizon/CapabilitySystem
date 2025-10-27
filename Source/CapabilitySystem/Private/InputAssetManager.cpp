@@ -1,7 +1,5 @@
 ﻿#include "CapabilitySystem/Public/InputAssetManager.h"
 #include "CapabilitySystem/Public/CapabilityCommon.h"
-#include "AngelscriptBinds.h"
-#include "AngelscriptDocs.h"
 #include "EnhancedInput/Public/InputMappingContext.h"
 
 void UInputAssetManager::Initialize(FSubsystemCollectionBase& Collection) {
@@ -69,48 +67,26 @@ FString UInputAssetManager::ToStringAllAction() const {
     return Result;
 }
 
-UInputAction* UInputAssetManager::Action(const FName& ActionName) {
-    if (Instance)
-        return Instance->FindAction(ActionName);
+UInputAction* UInputAssetManagerBind::Action(const FName& ActionName) {
+    if (UInputAssetManager::Instance)
+        return UInputAssetManager::Instance->FindAction(ActionName);
     return nullptr;
 }
 
-UInputMappingContext* UInputAssetManager::IMC(const FName& IMCName) {
-    if (Instance)
-        return Instance->FindIMC(IMCName);
+UInputMappingContext* UInputAssetManagerBind::IMC(const FName& IMCName) {
+    if (UInputAssetManager::Instance)
+        return UInputAssetManager::Instance->FindIMC(IMCName);
     return nullptr;
 }
 
-FString UInputAssetManager::GetStringAllAction() {
-    if (Instance)
-        return Instance->ToStringAllAction();
+FString UInputAssetManagerBind::GetStringAllAction() {
+    if (UInputAssetManager::Instance)
+        return UInputAssetManager::Instance->ToStringAllAction();
     return "";
 }
 
-FString UInputAssetManager::GetStringAllIMC() {
-    if (Instance)
-        return Instance->ToStringAllIMC();
+FString UInputAssetManagerBind::GetStringAllIMC() {
+    if (UInputAssetManager::Instance)
+        return UInputAssetManager::Instance->ToStringAllIMC();
     return "";
 }
-
-AS_FORCE_LINK const FAngelscriptBinds::FBind Bind_ArzInputAssetManagerHelpers(FAngelscriptBinds::EOrder::Late, [] {
-    {
-        FAngelscriptBinds::FNamespace iam("IAManager");
-
-        FAngelscriptBinds::BindGlobalFunction("UInputAction Action(const FName& InputActionName)",
-                                              &UInputAssetManager::Action);
-        SCRIPT_BIND_DOCUMENTATION("尝试获取一个UInputAction");
-
-        FAngelscriptBinds::BindGlobalFunction("UInputMappingContext IMC(const FName& IMCName)",
-                                              &UInputAssetManager::IMC);
-        SCRIPT_BIND_DOCUMENTATION("尝试获取一个UInputMappingContext");
-
-        FAngelscriptBinds::BindGlobalFunction("FString GetStringAllAction()",
-                                              &UInputAssetManager::GetStringAllAction);
-        SCRIPT_BIND_DOCUMENTATION("获取所有Action的信息字符串");
-
-        FAngelscriptBinds::BindGlobalFunction("FString GetStringAllIMC()",
-                                              &UInputAssetManager::GetStringAllIMC);
-        SCRIPT_BIND_DOCUMENTATION("获取所有InputMappingContext的信息字符串");
-    }
-});

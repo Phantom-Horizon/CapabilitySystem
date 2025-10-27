@@ -15,10 +15,6 @@
 	"Installed": false,
 	"Plugins": [
 		{
-			"Name": "Angelscript",
-			"Enabled": true
-		},
-		{
 			"Name": "EnhancedInput",
 			"Enabled": true
 		}
