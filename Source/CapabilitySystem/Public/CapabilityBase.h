@@ -22,7 +22,7 @@ enum class ECapabilityExecuteSide : uint8 {
     OwnerLocalControlledOnly UMETA(DisplayName = "Owner Local Controlled Only"),
 };
 
-UCLASS(NotBlueprintable)
+UCLASS(Abstract, NotBlueprintable)
 class CAPABILITYSYSTEM_API UCapabilityBase : public UObject {
     GENERATED_BODY()
 
