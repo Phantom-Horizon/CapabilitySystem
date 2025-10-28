@@ -15,7 +15,7 @@ The architecture takes cues from the capability framework Hazelight discussed at
 - **`UCapabilitySet` & `UCapabilitySetCollection`**: data assets created in the editor. A set lists the capability classes (and optional data component classes) that should spawn together. Collections group several sets so you can apply a full loadout in one call. Reordering entries inside a set instantly changes execution priority without touching code.
 - **`UCapability`**: the base class you extend for gameplay behaviour. It provides the lifecycle hooks (start, activation, tick, end) and handles networking based on `ExecuteSide`.
 - **`UCapabilityInput`**: a convenience subclass of `UCapability` that adds Enhanced Input helpers (`OnBindActions`, `OnBindInputMappingContext`, action binding utilities). Use this whenever the capability reacts to player input.
-- **`UCapabilityDataComponent`**: a replicated actor component spawned alongside a capability set to store shared runtime data (cooldowns, references, UI widgets, etc.). Access them through the owning actor, for example `GetOwner()->FindComponentByClass(Type)` in C++ or `SomeTypeComponent::Get(Owner)` in AngelScript.
+- **`UCapabilityDataComponent`**: a replicated actor component spawned alongside a capability set to store shared runtime data (cooldowns, references, UI widgets, etc.). Access them through the owning actor, for example `GetOwner()->FindComponentByClass(Type)` in C++ or `Owner.GetComponentByClass(Type)` in AngelScript.
 - **`UInputAssetManager` & `UInputAssetManagerBind`**: a subsystem plus blueprint-callable helper class. Register `UInputAction` and `UInputMappingContext` assets in Project Settings > Input Asset Manager, then call `UInputAssetManagerBind::Action` / `::IMC` in your capabilities to fetch them without manual loading.
 
 ### Ordered Execution
@@ -27,6 +27,33 @@ Capabilities run in the order they appear inside a `UCapabilitySet`. Because the
 3. **Implement capabilities**: Derive from `UCapability` or `UCapabilityInput` in C++ or AngelScript, override the lifecycle hooks you need, and set defaults such as `ExecuteSide`, `CanEverTick`, and `TickInterval`.
 4. **Register loadouts**: At runtime call `AddCapabilitySet` or `AddCapabilitySetCollection` to apply gameplay loadouts. In `Authority` mode these calls must originate on the server; in `Local` mode any instance can add/remove sets.
 5. **Drive behaviour**: Use `BlockCapability` tags, data components, and capability activations to coordinate systems instead of hard references between gameplay classes.
+
+## Capability (Base) – Execution Model
+- Callback routing
+  - Always on all sides: `StartLife()`, `EndLife()`
+  - Only when `ShouldRunOnThisSide()` is true: `Setup()`, activation checks (`ShouldActive()`/`ShouldDeactivate()`), `Tick()`, `EndCapability()`
+  - Transition callbacks: `OnActivated()` and `OnDeactivated()` fire only on the side that performed the state change
+- Initialization sequence (per allowed side)
+  1) `Setup()`
+  2) Initial state check uses `ShouldDeactivate()`:
+     - If `ShouldDeactivate()` returns false → the capability activates immediately (`Activate()` → `OnActivated()`).
+     - If it returns true → the capability stays inactive. The framework calls `Deactivate()` for symmetry, but because it wasn’t active yet it early-outs and does not call `OnDeactivated()`.
+- Runtime evaluation (per tick; only if `CanEverTick` is true and the side check passes)
+  - While ACTIVE: call `ShouldDeactivate()`; if it returns true, transition to inactive (`Deactivate()` → `OnDeactivated()`).
+  - While INACTIVE: call `ShouldActive()`; if it returns true, transition to active (`Activate()` → `OnActivated()`).
+  - After the state update, `Tick(DeltaTime)` runs only if the capability is still active.
+  - If `TickInterval > 0`, the state checks and `Tick` are evaluated on that cadence rather than every frame.
+- Tick scheduling by the component
+  - A capability is included in the component’s tick list only when `CanEverTick` is true and `ShouldRunOnThisSide()` is true.
+  - Use `SetEnable(false)` to remove a capability from the tick list at runtime, and `SetTickInterval(seconds)` to reduce evaluation frequency.
+- Blocking
+  - Per frame, for each capability in the component’s tick list, the component checks `BlockInfo` against the capability’s `Tags`.
+    - If blocked: that frame’s update is skipped (no activation/deactivation evaluation, no Tick). If the capability is currently active it is deactivated (`Deactivate()` → `OnDeactivated()` on that side).
+    - If not blocked: the capability performs its normal frame update: evaluate activation/deactivation, and if it remains active, call `Tick` (respecting `TickInterval`).
+  - Because capabilities are processed sequentially, a call to `BlockCapability`/`UnBlockCapability` made by an earlier capability in the same frame takes effect immediately for later capabilities in that tick. Already-processed capabilities in that frame are unaffected until the next tick.
+- Teardown
+  - On removal/shutdown, an active capability is first deactivated (triggering `OnDeactivated()` on the side that was running it).
+  - Then `EndCapability()` runs on allowed sides, and `EndLife()` always runs on every side to guarantee final cleanup.
 
 ## Execution Sides
 Set the execution mode with `default ExecuteSide` inside your capability.  
@@ -45,123 +72,298 @@ Set the execution mode with `default ExecuteSide` inside your capability.
 <details>
 <summary>
 
-### Capability Lifecycle (AngelScript)
+### Capability (Base) – Lifecycle (AngelScript)
 
 </summary>
-AngelScript exposes the same hooks as the C++ classes, but the day-to-day pattern is slightly different: you subclass `UCapability` or `UCapabilityInput` and rely on the lifecycle callbacks below instead of overriding an actor-level `BeginPlay()`. The template lists every overridable function in the order they may run.
+AngelScript exposes the same hooks as the C++ classes, but the day-to-day pattern is slightly different: you subclass `UCapability` and rely on the lifecycle callbacks below instead of overriding an actor-level `BeginPlay()`. The template lists every overridable function in the order they may run.
 
 ```c++
 class UMyCapability : UCapability
 {
     default ExecuteSide = ECapabilityExecuteSide::Always;
     default CanEverTick = false;
-    default TickInterval = 0.f; // 0 = evaluate every frame while ticking
+    default TickInterval = 0.f; // 0 = evaluate every frame; >0 = evaluate on that cadence
 
-    // Runs once on every machine (server and all clients) regardless of ExecuteSide.
-    void StartLife() override {}
+    // Runs once on every machine (server and all clients), independent of ExecuteSide.
+    UFUNCTION(BlueprintOverride)
+    void StartLife() {}
 
-    // Runs only on sides where ShouldRunOnThisSide() == true. Use to cache components or data pointers.
-    void Setup() override {}
+    // Runs only on sides where ShouldRunOnThisSide() == true. Cache components/data here.
+    UFUNCTION(BlueprintOverride)
+    void Setup() {}
 
-    // Evaluated every update while the capability is INACTIVE. Return true to request activation.
-    bool ShouldActive() override { return true; }
+    // While INACTIVE (runtime): return true to request activation.
+    // Note: initial activation decision is made right after Setup based on ShouldDeactivate().
+    UFUNCTION(BlueprintOverride)
+    bool ShouldActive() { return true; }
 
-    // Evaluated every update while the capability is ACTIVE. Return true to request deactivation.
-    bool ShouldDeactivate() override { return false; }
+    // While ACTIVE (runtime): return true to request deactivation.
+    // Note: immediately after Setup, if ShouldDeactivate() returns false the capability activates at once; if true it stays inactive.
+    UFUNCTION(BlueprintOverride)
+    bool ShouldDeactivate() { return false; }
 
-    // Called immediately after Activate() succeeds on the local side.
-    void OnActivated() override {}
+    // Fired on the side that performed Activate().
+    UFUNCTION(BlueprintOverride)
+    void OnActivated() {}
 
-    // Called immediately after Deactivate() succeeds on the local side.
-    void OnDeactivated() override {}
+    // Fired on the side that performed Deactivate(). Not called during initial Setup unless the capability was already active.
+    UFUNCTION(BlueprintOverride)
+    void OnDeactivated() {}
 
-    // Ticks at the chosen interval while active and allowed to run on this side.
-    void Tick(float DeltaTime) override {}
+    // Called only if the capability is active and allowed to run on this side; respects TickInterval.
+    UFUNCTION(BlueprintOverride)
+    void Tick(float DeltaTime) {}
 
-    // Called on teardown (or when removed from a set) before EndLife(). Only runs on sides allowed by ExecuteSide.
-    void EndCapability() override {}
+    // Teardown on allowed sides (e.g., set removal). Runs before EndLife().
+    UFUNCTION(BlueprintOverride)
+    void EndCapability() {}
 
-    // Final cleanup. Always runs on every side (even if ExecuteSide skips that side).
-    void EndLife() override {}
+    // Final cleanup on all sides, even those that never ran Setup/ Tick due to ExecuteSide.
+    UFUNCTION(BlueprintOverride)
+    void EndLife() {}
 }
 ```
 </details>
 
-### Lifecycle Notes
-- `StartLife` runs on every machine regardless of execute side. Use it for seed data that must exist everywhere (tags, initial replicated values, etc.).
-- `Setup`, `Tick`, and `EndCapability` only run on sides where `ShouldRunOnThisSide()` returns true (for example, the owning client in `LocalControlledOnly` mode).
-- The state machine flow is: while inactive, `ShouldActive` is asked if the capability should come online (return `true` to activate); while active, `ShouldDeactivate` is asked if it should shut down (return `true` to deactivate).
-- `OnActivated` and `OnDeactivated` fire only on the side that drove the transition. Use replicated data components or RPCs if other machines must respond.
-- `Tick` executes for capabilities that keep `CanEverTick` enabled and pass the side check. Use `SetTickInterval` for coarse updates or `SetEnable(false)` to temporarily remove the capability from the tick list.
-- `EndCapability` respects `ExecuteSide`, while `EndLife` runs on every side (even ones that never ticked) so final cleanup always happens.
+<details>
+<summary>
 
-## AngelScript Flight Controller Example
-The following capability shows how to wire Enhanced Input to control forward/back/strafe/ascend/descend movement using only the character and its own camera component (no explicit player-controller access). It uses `UCapabilityInput`, so controller attach/detach events and input mapping context management are handled automatically.
+### Capability (Base) – Lifecycle (UnrealSharp C#)
+
+</summary>
+
+```csharp
+// C# (UnrealSharp) example for a base capability
+// Configure where and how often this capability runs on each machine.
+[UClass]
+public class UMyCapability : UCapability
+{
+    public UMyCapability()
+    {
+        // Where to run (see ExecuteSide table above). Example: only on locally controlled pawns/PCs.
+        SetExecuteSide(ECapabilityExecuteSide.LocalControlledOnly);
+        // Whether this capability can be evaluated every frame (or on an interval) on the allowed side.
+        SetCanEverTick(true);
+        // Per-frame (0) or interval-driven (>0) evaluation of state machine + Tick.
+        SetTickInterval(0.0f);
+    }
+
+    // Always runs on every machine (server + all clients), regardless of ExecuteSide.
+    public override void StartLife() { }
+
+    // Runs only where ShouldRunOnThisSide() == true. Cache components/data for this side here.
+    public override void Setup() { }
+
+    // While INACTIVE at runtime: return true to request activation.
+    // Note: immediately after Setup, the initial state uses ShouldDeactivate() instead.
+    public override bool ShouldActive() => true;
+
+    // While ACTIVE at runtime: return true to request deactivation.
+    // Note: after Setup, if ShouldDeactivate() returns false the capability activates immediately; if true, it stays inactive.
+    public override bool ShouldDeactivate() => false;
+
+    // Fired on the side that performed Activate(). Use to kick off side-local effects.
+    public override void OnActivated() { }
+
+    // Fired on the side that performed Deactivate(). Not called during initial bootstrap if the capability never became active.
+    public override void OnDeactivated() { }
+
+    // Called only if the capability is ACTIVE and allowed to run on this side; respects TickInterval.
+    public override void Tick(float deltaTime) { }
+
+    // Teardown on allowed sides (e.g., capability set removal). Runs before EndLife().
+    public override void EndCapability() { }
+
+    // Final cleanup on all sides, even on sides that never ran Setup/Tick due to ExecuteSide.
+    public override void EndLife() { }
+}
+```
+</details>
+
+
+## CapabilityInput – Controller-aware Input Capabilities
+`UCapabilityInput` builds on `UCapability` to handle input-specific plumbing:
+- Receives `OnGetControllerAndInputComponent(APlayerController, UEnhancedInputComponent)` when a local controller attaches
+- Exposes `OnControllerAttach` / `OnControllerDeattach` to react to possession changes
+- Provides `OnBindActions` and `OnBindInputMappingContext` to declare Enhanced Input bindings
+- Offers `UseInput()` / `StopUseInput()` to toggle mapping contexts at runtime without destroying the capability
+- Requires your pawns/controllers to forward control changes to the capability component so input caps can bind correctly:
+  - Call `UCapabilityComponent::OnControllerChanged(APlayerController*, UEnhancedInputComponent*)` when setting up input (`SetupPlayerInputComponent` / controller `SetupInputComponent`).
+  - Call `UCapabilityComponent::OnControllerRemoved()` on unpossess/detach.
+  - See `ACapabilityCharacter` and `ACapabilityController` for reference implementations.
+
+<details>
+<summary>
+
+### CapabilityInput Example (AngelScript)
+
+</summary>
+The example below wires Enhanced Input to control forward/back/strafe/ascend/descend using the character and its camera.
 
 ```c++
 class UFlyingInputCapability : UCapabilityInput
 {
     default ExecuteSide = ECapabilityExecuteSide::LocalControlledOnly;
-    default CanEverTick = true;
+    default CanEverTick = false; // We use Input event, so we can disable Capability part.
 
     ACharacter CachedCharacter;
-    UCameraComponent CharacterCamera;
 
-    void Setup() override
+    // Execute on Server and all Clients
+    UFUNCTION(BlueprintOverride)
+    void StartLife() 
     {
         CachedCharacter = Cast<ACharacter>(Owner);
-        CharacterCamera = CachedCharacter != nullptr ? CachedCharacter.FindComponentByClass(UCameraComponent::StaticClass()) : nullptr;
     }
 
-    void OnBindActions() override
+    // Execute on LocalControlledOnly (Because ExecuteSide == ECapabilityExecuteSide::LocalControlledOnly)
+    UFUNCTION(BlueprintOverride)
+    void Setup()
     {
-        BindAction(UInputAssetManagerBind::Action(n"Fly_Move"), ETriggerEvent::Triggered, this, n"MoveXY");
-        BindAction(UInputAssetManagerBind::Action(n"Fly_Elevate"), ETriggerEvent::Triggered, this, n"MoveZ");
-        BindAction(UInputAssetManagerBind::Action(n"Fly_Look"), ETriggerEvent::Triggered, this, n"RotateCamera");
+        /* Due to initialization latency issues in Unreal Networking, we avoid setting the movement mode in StartLife. 
+        This is because when the server executes StartLife, 
+        the client might not have even received the Capability component data yet.
+        Therefore, the most stable approach is for the client to call an RPC to the server during its Setup. */
+        StartFlyingMode(); // RPC
     }
 
-    void OnBindInputMappingContext() override
+    UFUNCTION(Server)
+    void StartFlyingMode() 
     {
-        BindInputMappingContext(UInputAssetManagerBind::IMC(n"IMC_Flying"));
+        UCharacterMovementComponent::Get(Owner).SetMovementMode(EMovementMode::MOVE_Flying);
     }
 
-    bool ShouldActive() override
+    UFUNCTION(BlueprintOverride)
+    void OnBindActions() 
     {
-        return CachedCharacter != nullptr;
+        BindAction(UInputAssetManagerBind::Action(n"IA_RobotMove"), ETriggerEvent::Triggered, this, n"Move");
+        BindAction(UInputAssetManagerBind::Action(n"IA_RobotUpDown"), ETriggerEvent::Triggered, this, n"UpDown");
+        BindAction(UInputAssetManagerBind::Action(n"IA_RobotLook"), ETriggerEvent::Triggered, this, n"Look");
     }
 
-    bool ShouldDeactivate() override
+    UFUNCTION(BlueprintOverride)
+    void OnBindInputMappingContext()
     {
-        return CachedCharacter == nullptr;
+        BindInputMappingContext(UInputAssetManagerBind::IMC(n"IMC_Robot_Fly"));
     }
 
-    void MoveXY(FInputActionValue Value)
+    UFUNCTION()
+    void Move(FInputActionValue Value) 
     {
-        if (CachedCharacter == nullptr) return;
-        const FVector2D Axis = Value.GetAxis2D();
-        const FVector Forward = CharacterCamera != nullptr ? CharacterCamera.GetForwardVector() : CachedCharacter.GetActorForwardVector();
-        const FVector Right = CharacterCamera != nullptr ? CharacterCamera.GetRightVector() : CachedCharacter.GetActorRightVector();
-        CachedCharacter.AddMovementInput(Forward, Axis.Y);
-        CachedCharacter.AddMovementInput(Right, Axis.X);
+        FVector2D v = Value.GetAxis2D();
+        FVector forward = CachedCharacter.GetActorForwardVector();
+        FVector right = CachedCharacter.GetActorRightVector();
+        CachedCharacter.AddMovementInput(right * v.X);
+        CachedCharacter.AddMovementInput(forward * v.Y);
     }
 
-    void MoveZ(FInputActionValue Value)
+    UFUNCTION()
+    void Look(FInputActionValue Value) 
     {
-        if (CachedCharacter == nullptr) return;
-        CachedCharacter.AddMovementInput(FVector::UpVector, Value.GetAxis1D());
+        FVector2D v = Value.GetAxis2D();
+        CachedCharacter.AddControllerYawInput(v.X);
+        CachedCharacter.AddControllerPitchInput(v.Y);
     }
 
-    void RotateCamera(FInputActionValue Value)
+    UFUNCTION()
+    void UpDown(FInputActionValue Value) 
     {
-        if (CachedCharacter == nullptr) return;
-        const FVector2D Axis = Value.GetAxis2D();
-        CachedCharacter.AddControllerYawInput(Axis.X);
-        CachedCharacter.AddControllerPitchInput(Axis.Y);
+        float v = Value.GetAxis1D();
+        FVector UpVec = CachedCharacter.GetActorUpVector();
+        CachedCharacter.AddMovementInput(UpVec * v);
     }
 }
 ```
+</details>
 
-`UInputAssetManagerBind` is designed as an ergonomic helper: once you register your `UInputAction` and `UInputMappingContext` assets in Project Settings > Input Asset Manager, you can reference them with `UInputAssetManagerBind::Action(Name)` or `::IMC(Name)` directly from code without manual loading.
+`UInputAssetManagerBind` is designed as an ergonomic helper: once you register your `UInputAction` and `UInputMappingContext` assets in **Project Settings -> Input Asset Manager**, you can reference them with `UInputAssetManagerBind::Action(Name)` or `::IMC(Name)` directly from code without manual loading.
+
+<details>
+<summary>
+
+### CapabilityInput Example (UnrealSharp C#)
+
+</summary>
+
+```csharp
+// C# (UnrealSharp) input capability: binds actions and an IMC
+[UClass]
+public class UFlyingInputCapability : UCapabilityInput
+{
+   private ACharacter? CachedCharacter { get; set; }
+    
+    public UFlyingInputCapability()
+    {
+        executeSide = ECapabilityExecuteSide.LocalControlledOnly;
+        CanEverTick = false; // We use Input event, so we can disable Capability part.
+        tickInterval = 0.0f;
+    }
+    
+    // Execute on Server and all Clients
+    public override void StartLife()
+    {
+        CachedCharacter = Owner as ACharacter;
+        CachedCharacter?.CharacterMovement.SetMovementMode(EMovementMode.MOVE_Flying);
+    }
+
+    // Execute on LocalControlledOnly (Because ExecuteSide == ECapabilityExecuteSide.LocalControlledOnly)
+    public override void Setup()
+    {
+        /* Due to initialization latency issues in Unreal Networking, we avoid setting the movement mode in StartLife. 
+        This is because when the server executes StartLife, 
+        the client might not have even received the Capability component data yet.
+        Therefore, the most stable approach is for the client to call an RPC to the server during its Setup. */
+        StartFlyingMode(); // RPC
+    }
+
+    [UFunction(FunctionFlags.RunOnServer | FunctionFlags.Reliable)]
+    private void StartFlyingMode()
+    {
+        CachedCharacter?.CharacterMovement.SetMovementMode(EMovementMode.MOVE_Flying);
+    }
+    
+    protected override void OnBindActions()
+    {
+        BindAction(UInputAssetManagerBind.Action("IA_Look"), ETriggerEvent.Triggered, this, "Look");
+        BindAction(UInputAssetManagerBind.Action("IA_Move"), ETriggerEvent.Triggered, this, "Move");
+        BindAction(UInputAssetManagerBind.Action("IA_UpDown"), ETriggerEvent.Triggered, this, "UpDown");
+    }
+
+    protected override void OnBindInputMappingContext()
+    {
+        BindInputMappingContext(UInputAssetManagerBind.IMC("IMC_Moving"));
+    }
+
+    [UFunction]
+    public void Look(FInputActionValue value)
+    {
+        if (CachedCharacter is null) return;
+        var offset = value.GetAxis2D();
+        CachedCharacter.AddControllerYawInput((float)offset.X);
+        CachedCharacter.AddControllerPitchInput(-(float)offset.Y);
+    }
+
+    [UFunction]
+    public void UpDown(FInputActionValue value)
+    {
+        if (CachedCharacter is null) return;
+        var offset = value.GetAxis1D();
+        var up = CachedCharacter.ActorUpVector;
+        CachedCharacter.AddMovementInput(offset * up);
+    }
+
+    [UFunction]
+    public void Move(FInputActionValue value)
+    {
+        if (CachedCharacter is null) return;
+        var offset = value.GetAxis2D();
+        var forward = CachedCharacter.ActorForwardVector;
+        var right = CachedCharacter.ActorRightVector;
+        CachedCharacter.AddMovementInput(forward * offset.Y);
+        CachedCharacter.AddMovementInput(right * offset.X);
+    }
+}
+```
+</details>
 
 ## Managing Capability Sets
 1. Create a `UCapabilitySet` asset and add your capability classes along with any required `UCapabilityDataComponent` classes. Order matters: the list determines the execution sequence.
@@ -176,14 +378,10 @@ Because execution order is asset-driven, you can reprioritize behaviour simply b
 - Retrieve the shared component manually: in AngelScript call `Owner.GetComponentByClass(SomeDataComponentClass)`; in C++ call `GetOwner()->FindComponentByClass(SomeDataComponentClass)` or cache the pointer during `Setup`.
 - Use data components for cross-capability state such as cooldowns, target references, or UI widgets that several capabilities need to touch.
 
-## Input Capabilities
-- Extend `UCapabilityInput` when you need Enhanced Input bindings. The component forwards `OnGetControllerAndInputComponent` whenever a local controller attaches so you can bind actions and mapping contexts in one place.
-- Override `OnBindActions` / `OnBindInputMappingContext` to describe bindings. Call `UseInput()` and `StopUseInput()` to toggle the mapping context without destroying the capability.
-- Configure the `UInputAssetManager` settings (Project Settings > Input Asset Manager) so your capabilities can fetch actions through `UInputAssetManagerBind::Action/IMC`.
 
 ## Networking Notes
 - In `Authority` mode, add and remove capability sets from the server. The component registers each capability, its meta head, and every data component as replicated sub-objects so owners receive identical lifecycles.
-- Clients defer capability `BeginPlay` until required actor components exist, preventing race conditions when data components are still initializing.
+- Clients defer capability bootstrap until required actor components exist, preventing race conditions when data components are still initializing.
 - `AllClients` executes on every non-dedicated instance (including listen servers), while `OwnerLocalControlledOnly` walks up the ownership chain so gadget actors attached to a player still respect local control.
 - `Local` mode keeps all work on the current instance, which is ideal for editor utilities, standalone previews, or controller-specific UI logic.
 
@@ -193,7 +391,6 @@ Because execution order is asset-driven, you can reprioritize behaviour simply b
 - Use `stat Capability` to monitor total and ticking capability counts.
 - Prefer `SetCanEverTick(false)` for event-driven capabilities; re-enable ticking only when necessary.
 - Block mutually exclusive abilities with `BlockCapability(Tag, Source)` / `UnBlockCapability` instead of spreading tag checks across code.
-- Forward controller changes from your pawns/controllers to the capability component (`OnControllerChanged` / `OnControllerRemoved`) so `UCapabilityInput` instances bind correctly (see `ACapabilityCharacter` and `ACapabilityController` for reference).
 - Enable the `CapabilitySystemLog` category for runtime diagnostics; the component already emits warnings when assets fail to load or when replication preconditions are not met.
 
-Capability System emphasises predictable lifecycle hooks, explicit network routing, and data-driven ordering, so you can extend gameplay behaviour safely and iteratively using script languages such as: AngelScript, UnrealSharp ... 
+Capability System emphasises predictable lifecycle hooks, explicit network routing, and data-driven ordering, so you can extend gameplay behaviour safely and iteratively using script languages such as AngelScript or UnrealSharp.
