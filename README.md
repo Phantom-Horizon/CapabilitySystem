@@ -1,7 +1,7 @@
 # Capability System
 
 ## Overview
-Capability System is a lightweight gameplay framework that lets you assemble actor behaviour from small, network-aware modules called *capabilities*. Each capability can decide where it executes (server, owning client, every client, etc.), access replicated data components, and optionally manage Enhanced Input bindings. Designers can work entirely in AngelScript while sharing the same lifecycle and networking rules as C++ counterparts.
+Capability System is a lightweight gameplay framework that lets you assemble actor behaviour from small, network-aware modules called *capabilities*. It is engine-version agnostic: the same core works whether your project leans on C++, Blueprints, UnrealSharp, or AngelScript. Each capability can decide where it executes (server, owning client, every client, etc.), access replicated data components, and optionally manage Enhanced Input bindings. Designers can work entirely in AngelScript while sharing the same lifecycle and networking rules as C++ counterparts.
 
 The architecture takes cues from the capability framework Hazelight discussed at GDC: capabilities act as tiny, composable slices of logic that can be added, reordered, or removed without touching surrounding systems. This reference implementation keeps the core ideas approachable: capabilities own their own state, opt into networking, and cooperate through tags instead of hard-coded dependencies, making it easy to iterate rapidly on gameplay while keeping codebases decoupled.
 
@@ -185,4 +185,4 @@ Because execution order is asset-driven, you can reprioritize behaviour simply b
 - Forward controller changes from your pawns/controllers to the capability component (`OnControllerChanged` / `OnControllerRemoved`) so `UCapabilityInput` instances bind correctly (see `ACapabilityCharacter` and `ACapabilityController` for reference).
 - Enable the `CapabilitySystemLog` category for runtime diagnostics; the component already emits warnings when assets fail to load or when replication preconditions are not met.
 
-Capability System emphasises predictable lifecycle hooks, explicit network routing, and data-driven ordering, so you can extend gameplay behaviour safely and iteratively using AngelScript. 
+Capability System emphasises predictable lifecycle hooks, explicit network routing, and data-driven ordering, so you can extend gameplay behaviour safely and iteratively using script languages such as: AngelScript, UnrealSharp ... 
