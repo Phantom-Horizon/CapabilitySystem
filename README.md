@@ -46,7 +46,7 @@ Capabilities run in the order they appear inside a `UCapabilitySet`. Because the
 
 6. **Drive behaviour**: Use `BlockCapability` tags, data components, and capability activations to coordinate systems instead of hard references between gameplay classes.
 
-## Capability (Base) – Execution Model
+## Capability – Execution Model
 - Callback routing
   - Always on all sides: `StartLife()`, `EndLife()`
   - Only when `ShouldRunOnThisSide()` is true: `Setup()`, activation checks (`ShouldActive()`/`ShouldDeactivate()`), `Tick()`, `EndCapability()`
@@ -90,7 +90,7 @@ Set the execution mode with `default ExecuteSide` inside your capability.
 <details>
 <summary>
 
-### Capability (Base) – Lifecycle (AngelScript)
+### Capability – Lifecycle (AngelScript)
 
 </summary>
 AngelScript exposes the same hooks as the C++ classes, but the day-to-day pattern is slightly different: you subclass `UCapability` and rely on the lifecycle callbacks below instead of overriding an actor-level `BeginPlay()`. The template lists every overridable function in the order they may run.
@@ -146,7 +146,7 @@ class UMyCapability : UCapability
 <details>
 <summary>
 
-### Capability (Base) – Lifecycle (UnrealSharp C#)
+### Capability – Lifecycle (UnrealSharp C#)
 
 </summary>
 

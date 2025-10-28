@@ -46,7 +46,7 @@ Capability System 是一套轻量的玩法框架，让你把 Actor 的行为拆�
 
 6. 驱动行为：用 `BlockCapability` 标签、数据组件和能力的激活/失活来协作系统，而不是在各个玩法类之间写硬引用。
 
-## 能力（基类）——执行模型（Capability (Base) – Execution Model）
+## Capability 执行模型（Capability Execution Model）
 - 回调路由
   - 所有侧都执行：`StartLife()`、`EndLife()`
   - 仅在 `ShouldRunOnThisSide()` 为真时执行：`Setup()`、激活检查（`ShouldActive()` / `ShouldDeactivate()`）、`Tick()`、`EndCapability()`
@@ -90,7 +90,7 @@ Capability System 是一套轻量的玩法框架，让你把 Actor 的行为拆�
 <details>
 <summary>
 
-### 能力（基类）——生命周期（AngelScript）
+### Capability — 生命周期（AngelScript）
 
 </summary>
 AngelScript 暴露与 C++ 相同的钩子，但日常用法稍有不同：继承 `UCapability`，使用下面这些生命周期回调，而不是覆写 Actor 级的 `BeginPlay()`。下面的模板按可能的执行顺序列出所有可覆写函数。
@@ -146,7 +146,7 @@ class UMyCapability : UCapability
 <details>
 <summary>
 
-### 能力（基类）——生命周期（UnrealSharp C#）
+### Capability — 生命周期（UnrealSharp C#）
 
 </summary>
 
@@ -198,7 +198,7 @@ public class UMyCapability : UCapability
 ```
 </details>
 
-## CapabilityInput——感知控制器的输入型能力
+## CapabilityInput — 感知控制器的输入型能力
 `UCapabilityInput` 在 `UCapability` 的基础上，处理与输入相关的流程：
 - 当本地控制器挂接时，接收 `OnGetControllerAndInputComponent(APlayerController, UEnhancedInputComponent)`
 - 暴露 `OnControllerAttach` / `OnControllerDeattach` 以响应控制权变更
