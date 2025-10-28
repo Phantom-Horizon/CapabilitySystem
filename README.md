@@ -99,7 +99,7 @@ AngelScript exposes the same hooks as the C++ classes, but the day-to-day patter
 class UMyCapability : UCapability
 {
     default ExecuteSide = ECapabilityExecuteSide::Always;
-    default CanEverTick = false;
+    default CanEverTick = true;
     default TickInterval = 0.f; // 0 = evaluate every frame; >0 = evaluate on that cadence
 
     // Runs once on every machine (server and all clients), independent of ExecuteSide.
@@ -159,11 +159,11 @@ public class UMyCapability : UCapability
     public UMyCapability()
     {
         // Where to run (see ExecuteSide table above). Example: only on locally controlled pawns/PCs.
-        SetExecuteSide(ECapabilityExecuteSide.LocalControlledOnly);
+        executeSide = ECapabilityExecuteSide.LocalControlledOnly;
         // Whether this capability can be evaluated every frame (or on an interval) on the allowed side.
-        SetCanEverTick(true);
+        CanEverTick = true;
         // Per-frame (0) or interval-driven (>0) evaluation of state machine + Tick.
-        SetTickInterval(0.0f);
+        tickInterval = 0.0f;
     }
 
     // Always runs on every machine (server + all clients), regardless of ExecuteSide.
