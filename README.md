@@ -23,10 +23,28 @@ Capabilities run in the order they appear inside a `UCapabilitySet`. Because the
 
 ## Usage Workflow
 1. **Place a manager**: Add `UCapabilityComponent` to the actor that should host capabilities. Pick `ComponentMode` (`Authority` for replicated gameplay, `Local` for standalone/editor tooling) and optionally assign preset sets or collections.
+
+    <img width="283" height="158" alt="image" src="https://github.com/user-attachments/assets/ea8571d4-175b-4c71-bff2-9f85102f94c7" />
+
 2. **Author assets**: Create `UCapabilitySet` assets that list the capability classes to spawn together. If the group needs shared state, include the matching `UCapabilityDataComponent` classes in the same set.
+
+    <img width="252" height="169" alt="image" src="https://github.com/user-attachments/assets/a23dc96d-570a-4a9d-bbb8-7b11eb1234ef" />
+    <img width="418" height="169" alt="image" src="https://github.com/user-attachments/assets/f5a568b0-5308-4f49-8676-87e985ca42cb" />
+
 3. **Implement capabilities**: Derive from `UCapability` or `UCapabilityInput` in C++ or AngelScript or UnrealSharp, override the lifecycle hooks you need, and set defaults such as `ExecuteSide`, `CanEverTick`, and `TickInterval`.
-4. **Register loadouts**: At runtime call `AddCapabilitySet` or `AddCapabilitySetCollection` to apply gameplay loadouts. In `Authority` mode these calls must originate on the server; in `Local` mode any instance can add/remove sets.
-5. **Drive behaviour**: Use `BlockCapability` tags, data components, and capability activations to coordinate systems instead of hard references between gameplay classes.
+
+    <img width="515" height="89" alt="image" src="https://github.com/user-attachments/assets/9c5ce2b6-4a2c-42ae-8552-eda55c62bfed" />
+
+4. **Combine Capabilities**: Combine Capabilities into a `CapabilitySet` to form a complex functional system, and adjust the order. The Capabilities will be Setup, checked for status, and Ticked in a top-to-bottom order. During destruction, the order will be from bottom to top.
+
+    <img width="549" height="169" alt="image" src="https://github.com/user-attachments/assets/b233d52a-8f35-4d90-9d21-da5a29fc0462" />
+    <img width="386" height="169" alt="image" src="https://github.com/user-attachments/assets/86465f42-8db7-4015-9669-66e89fbb3a1d" />
+
+5. **Register loadouts**: At runtime call `AddCapabilitySet` or `AddCapabilitySetCollection` to apply gameplay loadouts. In `Authority` mode these calls must originate on the server; in `Local` mode any instance can add/remove sets. Or place a `CapabilitySet` or `CapabilityCollection` into a `CapabilityComponent` in the editor as a preset capability.
+
+    <img width="544" height="173" alt="image" src="https://github.com/user-attachments/assets/f94a52cf-29d2-4a29-a033-363a0bb2e648" />
+
+6. **Drive behaviour**: Use `BlockCapability` tags, data components, and capability activations to coordinate systems instead of hard references between gameplay classes.
 
 ## Capability (Base) – Execution Model
 - Callback routing
