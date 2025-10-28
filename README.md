@@ -1,4 +1,9 @@
 # Capability System
+<p>
+  <u><b>&gt; English &lt;</b></u>
+  <span style="display:inline-block; width: 2rem; text-align: center;">|</span>
+  <u><a href="READMECN.md">中文</a></u>
+</p>
 
 ## Overview
 Capability System is a lightweight gameplay framework that lets you assemble actor behaviour from small, network-aware modules called *capabilities*. It is engine-version agnostic: the same core works whether your project leans on C++, Blueprints, UnrealSharp, or AngelScript. Each capability can decide where it executes (server, owning client, every client, etc.), access replicated data components, and optionally manage Enhanced Input bindings. Designers can work entirely in AngelScript while sharing the same lifecycle and networking rules as C++ counterparts.
@@ -37,7 +42,12 @@ Set the execution mode with `default ExecuteSide` inside your capability.
 
 `UCapabilityComponent` can run in two modes: `Authority` (default) where the server owns capability creation and replicates the sub-objects to clients, and `Local` where the owning instance builds everything locally (useful for standalone tools, previews, or controller-side widgets). Pick the mode per component instance in the details panel.
 
-## Capability Lifecycle (AngelScript)
+<details>
+<summary>
+
+### Capability Lifecycle (AngelScript)
+
+</summary>
 AngelScript exposes the same hooks as the C++ classes, but the day-to-day pattern is slightly different: you subclass `UCapability` or `UCapabilityInput` and rely on the lifecycle callbacks below instead of overriding an actor-level `BeginPlay()`. The template lists every overridable function in the order they may run.
 
 ```c++
@@ -75,6 +85,7 @@ class UMyCapability : UCapability
     void EndLife() override {}
 }
 ```
+</details>
 
 ### Lifecycle Notes
 - `StartLife` runs on every machine regardless of execute side. Use it for seed data that must exist everywhere (tags, initial replicated values, etc.).
