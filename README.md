@@ -2,7 +2,7 @@
 <p>
   <u><b>&gt; English &lt;</b></u>
   <span style="display:inline-block; width: 2rem; text-align: center;">|</span>
-  <u><a href="READMECN.md">中文</a></u>
+  <u><a href="README_CN.md">中文</a></u>
 </p>
 
 ## Overview
