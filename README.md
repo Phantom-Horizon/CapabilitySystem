@@ -3,14 +3,14 @@
 ## Overview
 Capability System is a lightweight gameplay framework that lets you assemble actor behaviour from small, network-aware modules called *capabilities*. Each capability can decide where it executes (server, owning client, every client, etc.), access replicated data components, and optionally manage Enhanced Input bindings. Designers can work entirely in AngelScript while sharing the same lifecycle and networking rules as C++ counterparts.
 
-The architecture follows the pattern Hazelight presented at GDC: capabilities act as tiny, composable slices of logic that can be added, reordered, or removed without touching surrounding systems. This reference implementation keeps the core ideas approachable: capabilities own their own state, opt into networking, and cooperate through tags instead of hard-coded dependencies, making it easy to iterate rapidly on gameplay while keeping codebases decoupled.
+The architecture takes cues from the capability framework Hazelight discussed at GDC: capabilities act as tiny, composable slices of logic that can be added, reordered, or removed without touching surrounding systems. This reference implementation keeps the core ideas approachable: capabilities own their own state, opt into networking, and cooperate through tags instead of hard-coded dependencies, making it easy to iterate rapidly on gameplay while keeping codebases decoupled.
 
 ## Core Types
 - **`UCapabilityComponent`**: the manager that lives on an actor. It is responsible for loading capability sets, creating capability instances, ticking them each frame, and replicating state to clients. Every pawn, character, or actor that should run capabilities needs exactly one of these components.
 - **`UCapabilitySet` & `UCapabilitySetCollection`**: data assets created in the editor. A set lists the capability classes (and optional data component classes) that should spawn together. Collections group several sets so you can apply a full loadout in one call. Reordering entries inside a set instantly changes execution priority without touching code.
 - **`UCapability`**: the base class you extend for gameplay behaviour. It provides the lifecycle hooks (start, activation, tick, end) and handles networking based on `ExecuteSide`.
 - **`UCapabilityInput`**: a convenience subclass of `UCapability` that adds Enhanced Input helpers (`OnBindActions`, `OnBindInputMappingContext`, action binding utilities). Use this whenever the capability reacts to player input.
-- **`UCapabilityDataComponent`**: a replicated actor component spawned alongside a capability set to store shared runtime data (cooldowns, references, UI widgets, etc.). Access them through the owning actor, for example `GetOwner()->FindComponentByClass(Type)` in C++ or `SomeComponentType::Get(Owner)` in AngelScript.
+- **`UCapabilityDataComponent`**: a replicated actor component spawned alongside a capability set to store shared runtime data (cooldowns, references, UI widgets, etc.). Access them through the owning actor, for example `GetOwner()->FindComponentByClass(Type)` in C++ or `SomeTypeComponent::Get(Owner)` in AngelScript.
 - **`UInputAssetManager` & `UInputAssetManagerBind`**: a subsystem plus blueprint-callable helper class. Register `UInputAction` and `UInputMappingContext` assets in Project Settings > Input Asset Manager, then call `UInputAssetManagerBind::Action` / `::IMC` in your capabilities to fetch them without manual loading.
 
 ### Ordered Execution
@@ -38,7 +38,7 @@ Set the execution mode with `default ExecuteSide` inside your capability.
 `UCapabilityComponent` can run in two modes: `Authority` (default) where the server owns capability creation and replicates the sub-objects to clients, and `Local` where the owning instance builds everything locally (useful for standalone tools, previews, or controller-side widgets). Pick the mode per component instance in the details panel.
 
 ## Capability Lifecycle (AngelScript)
-AngelScript exposes the same hooks as the C++ classes, but the day-to-day pattern is slightly different: you only subclass `UCapability` or `UCapabilityInput`, and there is no `BeginPlay()` override. The template below lists every overridable function in the order they may run.
+AngelScript exposes the same hooks as the C++ classes, but the day-to-day pattern is slightly different: you subclass `UCapability` or `UCapabilityInput` and rely on the lifecycle callbacks below instead of overriding an actor-level `BeginPlay()`. The template lists every overridable function in the order they may run.
 
 ```c++
 class UMyCapability : UCapability
