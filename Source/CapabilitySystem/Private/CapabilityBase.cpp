@@ -97,16 +97,6 @@ bool UCapabilityBase::IsSideAllClients() const {
     return NetMode != NM_DedicatedServer;
 }
 
-UCapabilityDataComponent* UCapabilityBase::GetC(TSubclassOf<UCapabilityDataComponent> ClassOfComponent) const {
-    return GetCA(ClassOfComponent, GetOwner());
-}
-
-UCapabilityDataComponent* UCapabilityBase::GetCA(TSubclassOf<UCapabilityDataComponent> ClassOfComponent,
-                                                 AActor* Target) const {
-    if (!Target) return nullptr;
-    return Cast<UCapabilityDataComponent>(Target->GetComponentByClass(ClassOfComponent));
-}
-
 void UCapabilityBase::BlockCapability(const FName& Tag, UObject* From) {
     if (auto Comp = GetCapabilityComponent())
         Comp->BlockCapability(Tag, From);
@@ -169,7 +159,6 @@ void UCapabilityBase::NativeEndPlay() {
 }
 
 void UCapabilityBase::NativeTick(float DeltaTime) {
-    // 当 tickInterval <= 0 表示每帧 Tick
     if (tickInterval <= 0.0f) {
         UpdateCapabilityState();
         if (bIsCapabilityActive) Tick(DeltaTime);
@@ -178,7 +167,6 @@ void UCapabilityBase::NativeTick(float DeltaTime) {
 
     tickTimeSum += DeltaTime;
     if (tickTimeSum >= tickInterval) {
-        // 使用减法而非清零，降低相位漂移
         tickTimeSum -= tickInterval;
         UpdateCapabilityState();
         if (bIsCapabilityActive) Tick(DeltaTime);

@@ -10,13 +10,13 @@ UCapabilityInput::UCapabilityInput(const FObjectInitializer& ObjectInitializer) 
 void UCapabilityInput::OnGetControllerAndInputComponent(
     APlayerController* TargetController, UEnhancedInputComponent* InputComponent) {
     
-    if (!IsValid(TargetController) || !IsValid(InputComponent)) return; //无效参数跳过
-    if (CachedController == TargetController && CachedInputComponent == InputComponent) return; //重复跳过
+    if (!IsValid(TargetController) || !IsValid(InputComponent)) return;
+    if (CachedController == TargetController && CachedInputComponent == InputComponent) return;
     
     UE_LOGFMT(CapabilitySystemLog, Log, "UCapabilityInput::OnGetControllerAndInputComponent: {0} - {1}.",
               GetOwner() ? GetOwner()->GetName() : TEXT("Unknown"), GetName());
     
-    if (CachedController) OnMissingController(); //如果之前被附身了, 那么移除, 一段本身不应该被执行到;
+    if (CachedController) OnMissingController();
     
     CachedController = TargetController;
     CachedInputComponent = InputComponent;
@@ -61,6 +61,12 @@ void UCapabilityInput::EndPlay() {
 void UCapabilityInput::OnControllerDeattach_Implementation() {}
 
 void UCapabilityInput::OnControllerAttach_Implementation() {}
+
+void UCapabilityInput::OnBindActions_Implementation() {
+}
+
+void UCapabilityInput::OnBindInputMappingContext_Implementation() {
+}
 
 bool UCapabilityInput::BindAction(const UInputAction* Action, ETriggerEvent TriggerEvent, UObject* Target,
                                   FName FunctionName) {

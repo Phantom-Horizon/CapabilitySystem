@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿// Copyright ysion(LZY). All Rights Reserved.
+#pragma once
 
 #include "CoreMinimal.h"
 #include "InputAction.h"

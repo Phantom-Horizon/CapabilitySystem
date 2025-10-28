@@ -1,4 +1,4 @@
-﻿// Copyright ySion. All Rights Reserved.
+﻿// Copyright ysion(LZY). All Rights Reserved.
 
 #pragma once
 #include "CapabilitySystem/Public/Capability.h"

@@ -92,7 +92,6 @@ void UCapabilityComponent::BeginPlay() {
     Super::BeginPlay();
 
     if (ComponentMode == ECapabilityComponentMode::Local) {
-        // 本地模式：直接在当前端加载预设与集合（不依赖服务器）
         for (auto& Collection : CapabilitySetCollection) {
             AddCapabilitySetCollection(Collection);
         }
@@ -103,7 +102,6 @@ void UCapabilityComponent::BeginPlay() {
         return;
     }
 
-    // Authority 模式：保持原有逻辑（仅服务器创建并同步）
     if (GetOwner() && GetOwner()->HasAuthority()) {
         for (auto& CapabilitySet : CapabilitySetCollection) {
             AddCapabilitySetCollection(CapabilitySet);
@@ -333,7 +331,6 @@ void UCapabilityComponent::SyncCapabilityClient() {
 
     int AdditionNum = 0;
 
-    //找出需要删除的
     for (auto& Capability : ToRemoveCollect) { ToAddCollect.Remove(Capability); }
 
     int RemoveCount = CapabilitiesOnClient.RemoveAll([this](const FCapabilityObjectRefSet& Capability) {
@@ -413,27 +410,27 @@ void UCapabilityComponent::SyncCapabilityClient() {
 void UCapabilityComponent::OnRep_CapabilitySetListOnServer() {
     if (!GetOwner() || GetOwner()->HasAuthority()) return;
 
-    for (auto& Cap : LastClientCapabilities) { //找出移除的
+    for (auto& Cap : LastClientCapabilities) {
         if (!CapabilitySetListOnServer.Contains(Cap)) {
             ToRemoveCollect.Add(Cap);
         }
     }
 
-    for (const auto& Cap : CapabilitySetListOnServer) { //找出新增的
+    for (const auto& Cap : CapabilitySetListOnServer) {
         if (!LastClientCapabilities.Contains(Cap)) {
             ToAddCollect.Add(Cap);
         }
     }
 
-    for (auto& Cap : ToAddCollect) { // 补全delta信息
+    for (auto& Cap : ToAddCollect) {
         LastClientCapabilities.Add(Cap);
     }
 
-    for (auto& Cap : ToRemoveCollect) { //补全delta信息
+    for (auto& Cap : ToRemoveCollect) {
         LastClientCapabilities.Remove(Cap);
     }
 
-    bNeedSyncClientCaps = true; //通知需要同步
+    bNeedSyncClientCaps = true;
     SetComponentTickEnabled(true);
 }
 
@@ -446,7 +443,7 @@ void UCapabilityComponent::AddCapabilitySet(TSoftObjectPtr<UCapabilitySet> Targe
                   GetName());
     }
 
-    // Local 模式：允许在本地端直接添加
+    // Local Mode
     if (ComponentMode == ECapabilityComponentMode::Local) {
         if (TheOwner->IsActorBeingDestroyed()) {
             UE_LOGFMT(CapabilitySystemLog, Warning,
@@ -552,7 +549,7 @@ void UCapabilityComponent::AddCapabilitySet(TSoftObjectPtr<UCapabilitySet> Targe
         return;
     }
 
-    // Authority 模式：仅服务器允许添加
+    // Authority Mode
     if (!TheOwner->HasAuthority()) {
         UE_LOGFMT(CapabilitySystemLog, Warning,
                   "UCapabilityComponent::AddCapabilitySet called on client - Only Server Can Add CapabilitySet at {0} - {1}"
@@ -665,7 +662,6 @@ void UCapabilityComponent::AddCapabilitySet(TSoftObjectPtr<UCapabilitySet> Targe
 
         TempSet.CallBeginPlay();
 
-        // 检查新添加的Capability是否需要输入
         if (CachedController && CachedInputComponent) {
             for (auto& Capability : NewCapabilityObjects) {
                 if (UCapabilityInput* InputCap = Cast<UCapabilityInput>(Capability)) {

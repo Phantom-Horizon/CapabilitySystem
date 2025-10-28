@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿// Copyright ysion(LZY). All Rights Reserved.
+#pragma once
 
 #include "CoreMinimal.h"
 #include "Capability.h"
@@ -36,10 +37,10 @@ protected:
     UFUNCTION(BlueprintNativeEvent)
     void OnControllerDeattach();
 
-    UFUNCTION(BlueprintImplementableEvent)
+    UFUNCTION(BlueprintNativeEvent)
     void OnBindActions();
 
-    UFUNCTION(BlueprintImplementableEvent)
+    UFUNCTION(BlueprintNativeEvent)
     void OnBindInputMappingContext();
 
     UFUNCTION(BlueprintCallable)

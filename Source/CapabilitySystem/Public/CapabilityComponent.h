@@ -1,4 +1,5 @@
-﻿#pragma once
+﻿// Copyright ysion(LZY). All Rights Reserved.
+#pragma once
 
 #include "CoreMinimal.h"
 #include "CapabilityAsset.h"
@@ -11,8 +12,8 @@ DECLARE_DWORD_COUNTER_STAT(TEXT("Ticking Capability Count"), STAT_TickingCapabil
 
 UENUM(BlueprintType)
 enum class ECapabilityComponentMode : uint8 {
-    Authority UMETA(DisplayName = "Authority (网络同步)"),
-    Local UMETA(DisplayName = "Local (仅本地)")
+    Authority UMETA(DisplayName = "Authority"),
+    Local UMETA(DisplayName = "Local")
 };
 
 USTRUCT()
@@ -43,13 +44,13 @@ class CAPABILITYSYSTEM_API UCapabilityComponent : public UActorComponent {
     GENERATED_BODY()
 
 public:
-    UPROPERTY(EditAnywhere, Category = "A Capability Set Config")
+    UPROPERTY(EditAnywhere, Category = "Capability Set Config")
     ECapabilityComponentMode ComponentMode = ECapabilityComponentMode::Authority;
 
-    UPROPERTY(EditDefaultsOnly, Category = "A Capability Set Config")
+    UPROPERTY(EditDefaultsOnly, Category = "Capability Set Config")
     TArray<TSoftObjectPtr<UCapabilitySetCollection>> CapabilitySetCollection;
     
-    UPROPERTY(EditDefaultsOnly, Category = "A Capability Set Config")
+    UPROPERTY(EditDefaultsOnly, Category = "Capability Set Config")
     TArray<TSoftObjectPtr<UCapabilitySet>> CapabilitySetPresets;
     
     UCapabilityComponent();
@@ -93,16 +94,16 @@ protected:
     bool bShouldTickUpdateThisFrame = false;
 
     UPROPERTY(ReplicatedUsing=OnRep_CapabilitySetListOnServer)
-    TArray<FCapabilityObjectRefSet> CapabilitySetListOnServer{}; //服务端
+    TArray<FCapabilityObjectRefSet> CapabilitySetListOnServer{};
 
     UPROPERTY(Replicated)
     TArray<FCapabilityBlockInfo> BlockInfo;
 
     UPROPERTY()
-    TSet<FCapabilityObjectRefSet> LastClientCapabilities; //差异记录
+    TSet<FCapabilityObjectRefSet> LastClientCapabilities;
 
     UPROPERTY()
-    TArray<FCapabilityObjectRefSet> CapabilitiesOnClient; //客户端
+    TArray<FCapabilityObjectRefSet> CapabilitiesOnClient;
 
     UPROPERTY()
     TSet<FCapabilityObjectRefSet> ToRemoveCollect;

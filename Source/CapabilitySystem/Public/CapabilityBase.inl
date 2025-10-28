@@ -1,3 +1,4 @@
+// Copyright ysion(LZY). All Rights Reserved.
 #pragma once
 
 #include "CapabilityBase.h"
