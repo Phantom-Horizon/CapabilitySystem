@@ -6,7 +6,7 @@
 </p>
 
 ## Overview
-Capability System is a lightweight gameplay framework that lets you assemble actor behaviour from small, network-aware modules called *capabilities*. It is engine-version agnostic: the same core works whether your project leans on C++, Blueprints, UnrealSharp, or AngelScript. Each capability can decide where it executes (server, owning client, every client, etc.), access replicated data components, and optionally manage Enhanced Input bindings. Designers can work entirely in AngelScript while sharing the same lifecycle and networking rules as C++ counterparts.
+Capability System is a lightweight gameplay framework that lets you assemble actor behaviour from small, network-aware modules called *capabilities*. It is engine-version agnostic: the same core works whether your project leans on C++, Blueprints, UnrealSharp, or AngelScript. Each capability can decide where it executes (server, owning client, every client, etc.), access replicated data components, and optionally manage Enhanced Input bindings. Designers can work entirely in AngelScript or UnrealSharp while sharing the same lifecycle and networking rules as C++ counterparts.
 
 The architecture takes cues from the capability framework Hazelight discussed at GDC: capabilities act as tiny, composable slices of logic that can be added, reordered, or removed without touching surrounding systems. This reference implementation keeps the core ideas approachable: capabilities own their own state, opt into networking, and cooperate through tags instead of hard-coded dependencies, making it easy to iterate rapidly on gameplay while keeping codebases decoupled.
 
@@ -24,7 +24,7 @@ Capabilities run in the order they appear inside a `UCapabilitySet`. Because the
 ## Usage Workflow
 1. **Place a manager**: Add `UCapabilityComponent` to the actor that should host capabilities. Pick `ComponentMode` (`Authority` for replicated gameplay, `Local` for standalone/editor tooling) and optionally assign preset sets or collections.
 2. **Author assets**: Create `UCapabilitySet` assets that list the capability classes to spawn together. If the group needs shared state, include the matching `UCapabilityDataComponent` classes in the same set.
-3. **Implement capabilities**: Derive from `UCapability` or `UCapabilityInput` in C++ or AngelScript, override the lifecycle hooks you need, and set defaults such as `ExecuteSide`, `CanEverTick`, and `TickInterval`.
+3. **Implement capabilities**: Derive from `UCapability` or `UCapabilityInput` in C++ or AngelScript or UnrealSharp, override the lifecycle hooks you need, and set defaults such as `ExecuteSide`, `CanEverTick`, and `TickInterval`.
 4. **Register loadouts**: At runtime call `AddCapabilitySet` or `AddCapabilitySetCollection` to apply gameplay loadouts. In `Authority` mode these calls must originate on the server; in `Local` mode any instance can add/remove sets.
 5. **Drive behaviour**: Use `BlockCapability` tags, data components, and capability activations to coordinate systems instead of hard references between gameplay classes.
 
